@@ -60,4 +60,4 @@ final_avg = matrix((as.numeric(img1) + as.numeric(img2) + as.numeric(img3) +
             as.numeric(img7) + as.numeric(img8) + as.numeric(img9) + 
               as.numeric(img10) + as.numeric(img11))/11, 600, 600)
 
-plt_img(final_avg[,nrow(D):1])
+plt_img(final_avg[,nrow(final_avg):1])
