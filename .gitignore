@@ -1,3 +1,5 @@
 face_images/
 dlib/
 .Rhistory
+*.png
+*.jpg
