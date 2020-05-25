@@ -152,7 +152,7 @@ def detect_face_landmarks(images,
 
 def create_average_face(faces,
                         landmarks,
-                        output_dims=(600, 600),
+                        output_dims=(180, 180),
                         save_image=True,
                         output_file="average_face.jpg",
                         return_intermediates=False,

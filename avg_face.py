@@ -13,4 +13,3 @@ average_face = facer.create_average_face(faces, landmarks, save_image=True)
 
 # View the composite image
 plt.imshow(average_face)
-plt.savefig('output.png')
