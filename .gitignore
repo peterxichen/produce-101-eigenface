@@ -1,5 +1,7 @@
 face_images/
+facer/__pycache__/
 dlib/
+.RData
 .Rhistory
 *.png
 *.jpg
