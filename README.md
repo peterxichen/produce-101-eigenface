@@ -1,5 +1,7 @@
 # produce-101-eigenface
 
+Read the detailed study here:
+https://peterxichen.github.io/produce-101-eigenface/main.nb.html
 
 This project makes extensive use of https://github.com/johnwmillr/Facer
 based on OpenCV.
