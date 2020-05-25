@@ -15,17 +15,16 @@ for (i in 1:11){
 # plot image (and rotate)
 plt_img <- function(x){ image(x[,nrow(x):1], col=grey(seq(0, 1, length=256)))}
 
-# low rank svd
-k = 10
-
-s <- rsvd(avg_face, k=k)
-avg_svd <- s$u %*% diag(s$d) %*% t(s$v)
-
-faces_svd <- list()
+# flatten and create training matrix
+X <- matrix(, nrow = 360000, ncol = 0)
 for (i in 1:11){
-  s <- rsvd(faces[[i]], k=k)
-  faces_svd[[i]] <- s$u %*% diag(s$d) %*% t(s$v)
+  X<-cbind(X, as.vector(faces[[i]]))
 }
 
 
-plt_img(final_avg[,nrow(final_avg):1])
+
+# low rank svd
+k = 10
+
+s <- rsvd(X, k=k)
+# s$u %*% diag(s$d) %*% t(s$v)
