@@ -4,7 +4,7 @@ output: html_notebook
 ---
 By Peter Chen
 
-Full code repository [here](https://github.com/peterxichen/produce-101-eigenface)).
+Full code repository [here](https://github.com/peterxichen/produce-101-eigenface).
 
 The [Korean idol industry](https://en.wikipedia.org/wiki/Korean_idol) is characterized by systematically manufactured celebrities produced by entertainment companies focusing on a hybrid of music, fashion, dance, and, the subject of this particular study, visual appeal to market to a global audience. Perfectly capturing this phenomenon is the explosive popularity of the South Korean reality television franchise Produce 101, in which idol trainees compete via a series of vocal and dance performances as the audience vote for their favorite contestants, the ultimate goal being to debut a group that best reflects voter preferences. However, the emphasis on aesthetic appeal as well as the general high skill standards of the industry overall begs the question as whether adherence to beauty standards may play an overwhelming role in determining popularity and success on the show. In this study, we examine the relationship between visual and performance on the show.
 
