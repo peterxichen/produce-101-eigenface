@@ -16,7 +16,7 @@ for (i in 1:num){
 plt_img <- function(x){ image(x[,nrow(x):1], col=grey(seq(0, 1, length=256)))}
 
 # flatten and create training matrix
-X <- matrix(, nrow = 180*180, ncol = 0)
+X <- matrix(numeric(0), nrow = 180*180, ncol = 0)
 for (i in 1:num){
   X<-cbind(X, as.vector(faces[[i]]))
 }

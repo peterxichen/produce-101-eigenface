@@ -1,0 +1,74 @@
+---
+title: "Produce 48 Rankings - An Eigenface Approach"
+output: html_notebook
+---
+
+The [Korean idol industry](https://en.wikipedia.org/wiki/Korean_idol) is characterized by systematically manufactured celebrities produced by entertainment companies focusing on a hybrid of music, fashion, dance, and, the subject of this particular study, visual appeal to market to a global audience. Perfectly capturing this phenomenon is the explosive popularity of the South Korean reality television franchise Produce 101, in which idol trainees compete via a series of vocal and dance performances as the audience vote for their favorite contestants, the ultimate goal being to debut a group that best reflects voter preferences. However, the emphasis on aesthetic appeal as well as the general high skill standards of the industry overall begs the question as whether adherence to beauty standards may play an overwhelming role in determining popularity and success on the show. In this study, we examine the relationship between visual and performance on the show.
+
+The case study used in this study will be the third season of the  Produce 101, entitled Produce 48 which first premiered in 2018. The image dataset of Produce 48 contestants is obtained from https://48pedia.org.
+```{r}
+# clear workspace
+rm(list = ls()) 
+```
+
+```{r}
+library(jpeg)
+
+# load images
+num = 96 # number of images
+
+faces <- list()
+for (i in 1:num){
+  faces[[i]]<-readJPEG(paste("face_images/",toString(i),".jpg",sep=""), native = TRUE)
+}
+
+# plot image (and rotate)
+plt_img <- function(x){ image(x[,nrow(x):1], col=grey(seq(0, 1, length=256)))}
+
+plt_img(faces[[1]])
+plt_img(faces[[2]])
+```
+First, we transform each 180x180 image matrix into vectors for processing.
+```{r}
+# flatten and create training matrix
+X <- matrix(numeric(0), nrow = 180*180, ncol = 0)
+for (i in 1:num){
+  X<-cbind(X, as.vector(faces[[i]]))
+}
+
+```
+
+We compile an "avaerage face" of all our contestants.
+```{r}
+avg_face <- matrix(rowMeans(X),nrow=180,ncol=180)
+plt_img(avg_face)
+```
+
+The average here does not account for the discrepancy in facial orientation across images. Therefore, we use facial landmark detection model based in OpenCV by making use of [Facer](https://github.com/johnwmillr/Facer) and a pre-trained [dlib model](http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2). (The following is generated via separate Python tool found [here](https://github.com/peterxichen/produce-101-eigenface))
+```{r}
+avg_face <- readJPEG("average_face.jpg", native = TRUE) #raster
+plt_img(avg_face)
+```
+
+We now have matrix *X* where each columns is a vector representation of an image. Now, we attempt to find orthonormal vectors which best describe the distribution of our data. To do this we find the eigenvalues and eigenvectors corresponding to covariance matrix *C = XX^T*. Because matrix *C* in this case is intractable to calculate consider with dimensions of 180^2x180^2, we instead caculate *L=X^TX* and find its eigenvectors *v_i*. The resulting eigenvalues will be identical to covariance matrix *C*, we can then calculate the eigenvectors of *C* by calculating *u_i=Xv_i*. These new eigenvectors are our eigenfaces, a linear composition of the base images.
+
+```{r}
+#covriance matrix
+# C = X %*% t(X) <- intractable dimensions
+L = t(X) %*% X 
+e <- eigen(L)
+
+# X %*% eigenvectors of X^TX = eigenvectors of XX^T
+
+unit_vectorize <- function(x) {x / sqrt(sum(x^2))} # normalize to unit vector
+U <- matrix(numeric(0), nrow = 180*180, ncol = 0)
+for (i in 1:num){
+  U <- cbind(U, X %*% unit_vectorize(e$vectors[,i]))
+}
+  
+# eigenface components
+S <- matrix(numeric(0),nrow=num, ncol=0)
+for (i in 1:num){
+  S <- cbind(S, t(U) %*% X[,i])
+}
+```
