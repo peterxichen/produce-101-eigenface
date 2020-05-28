@@ -8,52 +8,64 @@ Full code repository [here](https://github.com/peterxichen/produce-101-eigenface
 
 The [Korean idol industry](https://en.wikipedia.org/wiki/Korean_idol) is characterized by systematically manufactured celebrities produced by entertainment companies focusing on a hybrid of music, fashion, dance, and, the subject of this particular study, visual appeal to market to a global audience. Perfectly capturing this phenomenon is the explosive popularity of the South Korean reality television franchise Produce 101, in which idol trainees compete via a series of vocal and dance performances as the audience vote for their favorite contestants, the ultimate goal being to debut a group that best reflects voter preferences. However, the emphasis on aesthetic appeal as well as the general high skill standards of the industry overall begs the question as whether adherence to beauty standards may play an overwhelming role in determining popularity and success on the show. In this study, we examine the relationship between visual and performance on the show.
 
-The case study used in this study will be the third season of the  Produce 101, entitled Produce 48 which first premiered in 2018. The image dataset of Produce 48 contestants is obtained from https://48pedia.org.
+The case study used will be the third season of the  Produce 101, entitled Produce 48 which first premiered in 2018. The training data consists of $R=96$ headshot images of Produce 48 contestants obtained from https://48pedia.org.
 ```{r}
 # clear workspace
 rm(list = ls()) 
 ```
 
+We ingest images and convert to grayscale via the [Luma function](https://en.wikipedia.org/wiki/Luma_(video)). The images are then scaled by 256 to display.
 ```{r}
 library(jpeg)
 
 # load images
 num = 96 # number of images
 
+# Luma function
+grayscale <- function(img){0.2126*img[,,1] + 0.7152*img[,,2] + 0.0722*img[,,3]}
+
 faces <- list()
 for (i in 1:num){
-  faces[[i]]<-readJPEG(paste("face_images/",toString(i),".jpg",sep=""), native = TRUE)
+  faces[[i]]<-grayscale(readJPEG(paste("face_images/",toString(i),".jpg",sep=""), native = FALSE))
 }
 
 # plot image (and rotate)
-plt_img <- function(x){ image(x[,nrow(x):1], col=grey(seq(0, 1, length=256)))}
+plt_img <- function(x){ image(t(x[nrow(x):1,]), col=grey(seq(0, 1, length=256)))}
 
 plt_img(faces[[1]])
 plt_img(faces[[2]])
 ```
-First, we transform each 180x180 image matrix into vectors for processing.
+First, we transform each $NxN$ (where $N=180$ resolution of the image) image matrix into vectors for processing.
 ```{r}
 # flatten and create training matrix
-X <- matrix(numeric(0), nrow = 180*180, ncol = 0)
+face_matrix <- matrix(numeric(0), nrow = 180*180, ncol = 0)
 for (i in 1:num){
-  X<-cbind(X, as.vector(faces[[i]]))
+  face_matrix<-cbind(face_matrix, as.vector(faces[[i]]))
 }
 
 ```
 
 We compile an "avaerage face" of all our contestants.
 ```{r}
-avg_face <- matrix(rowMeans(X),nrow=180,ncol=180)
+avg_face <- matrix(rowMeans(face_matrix),nrow=180,ncol=180)
 plt_img(avg_face)
 ```
 
 The average here does not account for the discrepancy in facial orientation across images. Therefore, we use facial landmark detection model based in OpenCV by making use of [Facer](https://github.com/johnwmillr/Facer) and a pre-trained [dlib model](http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2) (detailed implementation and code can be found [here](https://github.com/peterxichen/produce-101-eigenface)).
 ```{r}
-avg_face <- readJPEG("average_face.jpg", native = TRUE) #raster
+avg_face <- grayscale(readJPEG("average_face.jpg", native = FALSE))
 plt_img(avg_face)
 ```
+To obtain the characteristic features, we subtract the average face from each face vector to obtain matrix $X$.
+```{r}
+avg_face_vec <- as.vector(avg_face)
+X  <- matrix(numeric(0), nrow = 180*180, ncol = 0)
+for (i in 1:num){
+  X <- cbind(X, face_matrix[,i]-avg_face_vec)
+}
+```
 
-We now have matrix *X* where each columns is a vector representation of an image. Now, we attempt to find orthonormal vectors which best describe the distribution of our data. To do this we find the eigenvalues and eigenvectors corresponding to covariance matrix *C = XX^T*. Because matrix *C* in this case is intractable to calculate consider with dimensions of 180^2 by 180^2, we instead caculate *L=X^TX* and find its eigenvectors *v_i*. The resulting eigenvalues will be identical to covariance matrix *C*, we can then calculate the eigenvectors of *C* by calculating *u_i=Xv_i*. These new eigenvectors are our eigenfaces, a linear composition of the base images.
+We now have matrix $X$ where each columns is a vector representation of an image's characteristic features. Now, we attempt to find orthonormal vectors which best describe the distribution of our data. To do this we find the eigenvalues and eigenvectors corresponding to covariance matrix $C = XX^T$. Because matrix $C$ in this case is intractable to calculate consider with dimensions of $N^2$ by $N^2$, we instead caculate $L=X^TX$ and find its eigenvectors $v_i$. The resulting eigenvalues will be identical to covariance matrix $C$, we can then calculate the eigenvectors of $C$ by calculating $u_i=Xv_i$. These new eigenvectors are our eigenfaces, a linear composition of the base images.
 
 ```{r}
 #covriance matrix
@@ -63,15 +75,48 @@ e <- eigen(L)
 
 # X %*% eigenvectors of X^TX = eigenvectors of XX^T
 
-unit_vectorize <- function(x) {x / sqrt(sum(x^2))} # normalize to unit vector
-U <- matrix(numeric(0), nrow = 180*180, ncol = 0)
+unit_vectorize <- function(x){return(x/(sqrt(sum(x**2,na.rm=TRUE))))} # normalize to unit vector
+eigenfaces <- matrix(numeric(0), nrow = 180*180, ncol = 0)
 for (i in 1:num){
-  U <- cbind(U, X %*% unit_vectorize(e$vectors[,i]))
+  eigenfaces <- cbind(eigenfaces, X %*% unit_vectorize(e$vectors[,i]))
 }
-  
-# eigenface components
-S <- matrix(numeric(0),nrow=num, ncol=0)
-for (i in 1:num){
-  S <- cbind(S, t(U) %*% X[,i])
-}
+dim(eigenfaces)
+``` 
+
+Scaling and display the eigenfaces corresponding to the first two principal components.
+```{r}
+eigenface_1 <- matrix(eigenfaces[,1],nrow=180,ncol=180)
+plt_img(eigenface_1)
+eigenface_2 <- matrix(eigenfaces[,2],nrow=180,ncol=180)
+plt_img(eigenface_2)
 ```
+
+The resulting eigenface matrix $U=[u_1 u_2 ... u_R]$ where each column contains eigenface $u_i$. Plotting the eigenvalues we see a drastic drop in variance, so most eigenfaces can be disregarded.
+```{r}
+plot(x = seq(1:length( e$values)), y = e$values, type = "o", xlab = "Principle Component", ylab = "Variance")
+```
+Selecting 20 principal components should be more than eonugh to capture most of the variance in our dataset.
+```{r}
+U <- eigenfaces[,1:20]
+```
+
+We can use the eigenface matrix $U$ to transform a face image into its eigenface components by performing the following operation $U^T(img-avg)$. The resulting $Rx1$ vector gives us "weights" of the corresponding eigenface in contributing to a given image. Our matrix $X$ contains the "characteristic features", the image vector subtracted by the avergae face vector; we obtain the eigeinface components of our contestants by calculating $S=U^tX$.
+
+```{r}
+# eigenface components
+S <- t(U) %*% X
+dim(S)
+```
+
+The resulting matirx $S$ represent the first 20 coeffcients corresponding to each eigenface for each contestant. If we are to assume that facial features are the sole determining factor in success and popularity on the show, then we'd expect a clear relationship between these coeffcients and final ranking on the show.
+```{r}
+plot_component <- function(component){plot(x = seq(1:length(S[component,])), y = S[component,], type = "o", xlab = "Produce 48 Final Ranking", ylab = paste("Weight for Eigenface #",toString(component),sep=""))}
+
+plot_component(1)
+plot_component(2)
+plot_component(3)
+plot_component(4)
+plot_component(5)
+```
+
+
